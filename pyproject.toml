@@ -26,3 +26,6 @@ dependencies = [
 
 [project.scripts]
 json-agent-server = "json_agent.__main__:main"
+
+[tool.setuptools.packages.find]
+where = ["."]
