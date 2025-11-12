@@ -8,7 +8,17 @@ import os
 from pathlib import Path
 
 # Import the json agent runner
-from json_agent import run_json_task
+# Works with or without package installation
+import sys
+from pathlib import Path
+try:
+    from json_agent import run_json_task
+except ImportError:
+    # Fallback: import from parent directory
+    parent_dir = Path(__file__).parent.parent
+    if str(parent_dir) not in sys.path:
+        sys.path.insert(0, str(parent_dir))
+    from agent import run_json_task
 
 app = FastAPI(title="JSON Agent API")
 
@@ -65,5 +75,8 @@ async def modify_json(
 
 
 if __name__ == "__main__":
-    port = int(os.environ.get("PORT", 8000))
-    uvicorn.run("json_agent.web.app:app", host="0.0.0.0", port=port, reload=True)
+    port = int(os.environ.get("PORT", 8002))
+    print(f"Starting JSON Agent FastAPI server on http://0.0.0.0:{port}")
+    print(f"Web UI: http://localhost:{port}/")
+    print(f"API Docs: http://localhost:{port}/docs")
+    uvicorn.run(app, host="0.0.0.0", port=port, reload=False)

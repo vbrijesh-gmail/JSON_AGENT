@@ -1,2 +1,0 @@
-[console_scripts]
-json-agent-server = json_agent.__main__:main
