@@ -1,0 +1,277 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>JSON Agent UI</title>
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script crossorigin src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <style>
+      body { font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; margin: 2rem; background: #0b1020; color: #e8eaf0; line-height: 1.6; }
+      .card { background: #121735; border: 1px solid #263269; border-radius: 12px; padding: 24px; max-width: 900px; margin: 0 auto; }
+      .form-group { margin-bottom: 1.5rem; }
+      label { display: block; margin-bottom: 0.5rem; font-weight: 500; color: #b7c1f8; }
+      textarea, input[type="text"], input[type="file"] { 
+        width: 100%; 
+        padding: 10px 12px; 
+        border-radius: 8px; 
+        border: 1px solid #2c3b7a; 
+        background: #0e1533; 
+        color: #e8eaf0; 
+        font-family: monospace;
+        font-size: 14px;
+      }
+      textarea { min-height: 120px; resize: vertical; }
+      button { 
+        background: #4f46e5; 
+        color: white; 
+        border: none; 
+        padding: 12px 20px; 
+        border-radius: 8px; 
+        cursor: pointer; 
+        font-weight: 500;
+        transition: background 0.2s;
+      }
+      button:hover { background: #4338ca; }
+      button:disabled { opacity: 0.7; cursor: not-allowed; background: #4f46e5; }
+      .row { display: flex; gap: 16px; margin: 16px 0; align-items: center; }
+      pre { 
+        background: #0e1533; 
+        border: 1px solid #2c3b7a; 
+        border-radius: 8px; 
+        padding: 16px; 
+        overflow: auto; 
+        max-height: 500px;
+        font-size: 13px;
+      }
+      .error-message {
+        background: #4a1e32;
+        color: #ff7b92;
+        padding: 12px 16px;
+        border-radius: 8px;
+        margin: 16px 0;
+        border-left: 4px solid #e11d48;
+        font-family: monospace;
+        white-space: pre-wrap;
+        word-break: break-word;
+      }
+      .success-message {
+        background: #1a3a2f;
+        color: #6ee7b7;
+        padding: 12px 16px;
+        border-radius: 8px;
+        margin: 16px 0;
+        border-left: 4px solid #10b981;
+      }
+      .header {
+        margin-bottom: 2rem;
+        padding-bottom: 1rem;
+        border-bottom: 1px solid #263269;
+      }
+      .header h1 {
+        margin: 0 0 0.5rem 0;
+        color: #e8eaf0;
+      }
+      .header p {
+        margin: 0;
+        color: #94a3b8;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="text/babel">
+      function App() {
+        const [prompt, setPrompt] = React.useState("");
+        const [file, setFile] = React.useState(null);
+        const [schemaPath, setSchemaPath] = React.useState("deal_schema.json");
+        const [result, setResult] = React.useState(null);
+        const [loading, setLoading] = React.useState(false);
+        const [error, setError] = React.useState(null);
+        const [success, setSuccess] = React.useState(null);
+
+        const handleSubmit = async (e) => {
+          e.preventDefault();
+          setError(null);
+          setSuccess(null);
+          setResult(null);
+          
+          // Basic validation
+          if (!prompt) {
+            setError("Please provide instructions for the AI.");
+            return;
+          }
+          if (!file && !document.getElementById('json-text').value) {
+            setError("Please provide either a JSON file or paste JSON text.");
+            return;
+          }
+          
+          const form = new FormData();
+          form.append("prompt", prompt);
+          form.append("schema_path", schemaPath);
+          
+          // Add file or JSON text to form data
+          if (file) {
+            form.append("file", file);
+          } else {
+            try {
+              // Validate JSON format before sending
+              JSON.parse(document.getElementById('json-text').value);
+              form.append("json_text", document.getElementById('json-text').value);
+            } catch (e) {
+              setError(`Invalid JSON: ${e.message}`);
+              return;
+            }
+          }
+          
+          setLoading(true);
+          
+          try {
+            const res = await fetch("/api/modify", { 
+              method: "POST", 
+              body: form 
+            });
+            
+            const responseData = await res.json();
+            
+            if (!res.ok) {
+              // Handle validation errors from the server
+              if (responseData.type === 'validation_error') {
+                throw new Error(`Validation Error: ${responseData.detail}`);
+              }
+              throw new Error(responseData.detail || `Request failed with status ${res.status}`);
+            }
+            
+            setResult(JSON.stringify(responseData.data, null, 2));
+            setSuccess("JSON processed successfully!");
+          } catch (err) {
+            console.error("Error:", err);
+            setError(err.message || "An unknown error occurred");
+          } finally {
+            setLoading(false);
+            // Auto-scroll to results or errors
+            setTimeout(() => {
+              const element = document.getElementById(error ? 'error-message' : 'result-container');
+              if (element) {
+                element.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+              }
+            }, 100);
+          }
+        };
+
+        return (
+          <div className="card">
+            <div className="header">
+              <h1>JSON Agent</h1>
+              <p>Modify and validate JSON files with AI assistance</p>
+            </div>
+            
+            <form onSubmit={handleSubmit}>
+              <div className="form-group">
+                <label htmlFor="prompt">Instructions for AI:</label>
+                <input
+                  id="prompt"
+                  type="text"
+                  value={prompt}
+                  onChange={(e) => setPrompt(e.target.value)}
+                  placeholder="E.g., 'Update all email addresses to use the new domain'"
+                  disabled={loading}
+                />
+              </div>
+              
+              <div className="form-group">
+                <label>Upload JSON File:</label>
+                <input
+                  type="file"
+                  accept=".json"
+                  onChange={(e) => setFile(e.target.files?.[0] || null)}
+                  disabled={loading}
+                  style={{
+                    display: 'block',
+                    width: '100%',
+                    padding: '8px 12px',
+                    borderRadius: '8px',
+                    border: '1px solid #2c3b7a',
+                    backgroundColor: '#0e1533',
+                    color: '#e8eaf0',
+                    cursor: 'pointer',
+                    marginTop: '8px'
+                  }}
+                />
+              </div>
+              
+              <div style={{ marginTop: '1.5rem' }}>
+                <button 
+                  type="submit" 
+                  disabled={loading || !file}
+                  style={{
+                    padding: '12px 24px',
+                    fontSize: '1rem',
+                    fontWeight: '500',
+                    width: '100%',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '8px'
+                  }}
+                >
+                  {loading ? (
+                    <span>Processing... <span style={{ opacity: 0.7 }}>⏳</span></span>
+                  ) : (
+                    <span>Process JSON File <span style={{ opacity: 0.7 }}>→</span></span>
+                  )}
+                </button>
+              </div>
+            </form>
+            
+            {error && (
+              <div id="error-message" className="error-message">
+                <strong>Error:</strong> {error}
+              </div>
+            )}
+            
+            {success && (
+              <div className="success-message">
+                {success}
+              </div>
+            )}
+            
+            {result && (
+              <div id="result-container" style={{ marginTop: '2rem' }}>
+                <h3>Result:</h3>
+                <pre>{result}</pre>
+                <div style={{ marginTop: '1rem' }}>
+                  <button 
+                    onClick={() => {
+                      navigator.clipboard.writeText(result);
+                      alert('JSON copied to clipboard!');
+                    }}
+                    style={{ marginRight: '0.5rem' }}
+                  >
+                    Copy to Clipboard
+                  </button>
+                  <button 
+                    onClick={() => {
+                      const dataStr = 'data:text/json;charset=utf-8,' + encodeURIComponent(result);
+                      const downloadAnchorNode = document.createElement('a');
+                      downloadAnchorNode.setAttribute('href', dataStr);
+                      downloadAnchorNode.setAttribute('download', 'result.json');
+                      document.body.appendChild(downloadAnchorNode);
+                      downloadAnchorNode.click();
+                      downloadAnchorNode.remove();
+                    }}
+                  >
+                    Download JSON
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        );
+      }
+      const root = ReactDOM.createRoot(document.getElementById('root'));
+      root.render(<App />);
+    </script>
+  </body>
+</html>

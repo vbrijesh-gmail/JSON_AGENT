@@ -1,0 +1,59 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "additionalProperties": true,
+  "properties": {
+    "bidStart": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "bidHead": {
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "ver": { "type": ["string", "null"] },
+            "templateName": { "type": ["string", "null"] },
+            "templateMaster": { "type": ["string", "null"] },
+            "sttDte": { "type": ["string", "null"] },
+            "reg": { "type": ["string", "null"] },
+            "rateTypCd": { "type": ["string", "null"] },
+            "owner": { "type": ["string", "null"] },
+            "origBid": { "type": ["string", "null"] },
+            "lastModDte": { "type": ["string", "null"] },
+            "estAnnGrs": { "type": ["number", "null"] },
+            "endDte": { "type": ["string", "null"] },
+            "dist": { "type": ["string", "null"] },
+            "dealStatus": { "type": ["string", "null"] },
+            "dealRsn": { "type": ["string", "null"] },
+            "creDte": { "type": ["string", "null"] },
+            "creBxId": { "type": ["string", "null"] },
+            "cny": { "type": ["string", "null"] },
+            "billToCny": { "type": ["string", "null"] },
+            "bidNum": { "type": ["string", "null"] },
+            "bidName": { "type": ["string", "null"] }
+          }
+        },
+        "bidAcct": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": true,
+            "properties": {
+              "payTermUpd": { "type": ["string", "null"] },
+              "payTermCodeUpd": { "type": ["string", "null"] },
+              "payTermCode": { "type": ["string", "null"] },
+              "payTerm": { "type": ["string", "null"] },
+              "cwtTierClsUpd": { "type": ["string", "null"] },
+              "cwtTiercls": { "type": ["string", "null"] },
+              "ccEligUpd": { "type": ["string", "null"] },
+              "ccElig": { "type": ["string", "null"] },
+              "abrEnabUpd": { "type": ["string", "null"] },
+              "abrEnab": { "type": ["string", "null"] },
+              "acet": { "type": ["string", "null"] }
+            }
+          }
+        }
+      }
+    }
+  }
+}
